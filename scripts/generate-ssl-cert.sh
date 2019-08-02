@@ -34,7 +34,12 @@ iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 12
 ip6tables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 12345 || ip6tables -I INPUT -p tcp -m tcp --dport 80 -j DROP
 
 #Request for certificates
-$DIR/opt/letsencrypt/letsencrypt-auto certonly --standalone $test_params --domain $domain --preferred-challenges http-01 --http-01-port 12345 --renew-by-default --email $email --agree-tos --logs-dir $DIR/var/log/letsencrypt
+if [ -f "$DIR/var/www/letsencrypt/webroot" ]
+then
+    $DIR/opt/letsencrypt/letsencrypt-auto certonly -a webroot  --webroot-path /var/www/letsencrypt/ $test_params --domain $domain --preferred-challenges http-01 --renew-by-default --agree-tos --logs-dir $DIR/var/log/letsencrypt
+else
+    $DIR/opt/letsencrypt/letsencrypt-auto certonly --standalone $test_params --domain $domain --preferred-challenges http-01 --http-01-port 12345 --renew-by-default --email $email --agree-tos --logs-dir $DIR/var/log/letsencrypt
+fi
 
 iptables -t nat -D PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 12345
 ip6tables -t nat -D PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 12345 || ip6tables -I INPUT -p tcp -m tcp --dport 80 -j ACCEPT
