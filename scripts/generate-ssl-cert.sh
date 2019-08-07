@@ -36,8 +36,10 @@ ip6tables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 1
 #Request for certificates
 if [ -f "$DIR/var/www/letsencrypt/webroot" ]
 then
+    echo "Metod webroot" >> /var/log/letsencrypt.log;
     $DIR/opt/letsencrypt/letsencrypt-auto certonly -a webroot  --webroot-path /var/www/letsencrypt/ $test_params --domain $domain --preferred-challenges http-01 --renew-by-default --agree-tos --logs-dir $DIR/var/log/letsencrypt
 else
+    echo "Metod standalone" >> /var/log/letsencrypt.log;
     $DIR/opt/letsencrypt/letsencrypt-auto certonly --standalone $test_params --domain $domain --preferred-challenges http-01 --http-01-port 12345 --renew-by-default --email $email --agree-tos --logs-dir $DIR/var/log/letsencrypt
 fi
 
