@@ -1613,8 +1613,7 @@ function SSLManager(config) {
 
     me.removeSSLCert = function removeSSLCert() {
         var resp,
-            sslCerts,
-            certToRemove;
+            sslCerts;
 
         resp = jelastic.env.binder.GetSSLCerts(config.envName, session);
         if (resp.result != 0) return resp;
@@ -1622,19 +1621,8 @@ function SSLManager(config) {
         sslCerts = resp.responses;
 
         if (sslCerts.length > 0) {
-            // Find the LE certificate by checking domains
-            for (var i = 0; i < sslCerts.length; i++) {
-                var cert = sslCerts[i];
-                if (cert.domains && cert.domains.indexOf(config.envDomain) !== -1) {
-                    certToRemove = cert;
-                    break;
-                }
-            }
-
-            if (certToRemove) {
-                resp = jelastic.env.binder.RemoveSSLCerts(config.envName, session, certToRemove.id);
-                if (resp.result != 0) return resp;
-            }
+            resp = jelastic.env.binder.RemoveSSLCerts(config.envName, session, sslCerts[sslCerts.length - 1].id);
+            if (resp.result != 0) return resp;
         }
         
         if (config.withIntSSL && nodeManager.checkCustomSSL()) {
