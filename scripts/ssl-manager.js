@@ -415,7 +415,7 @@ function SSLManager(config) {
                 letsencryptPath: nodeManager.getPath("opt/letsencrypt")
             }],
 
-            [ me.cmd, "grep letsencrypt-ssl /var/spool/cron/root | head -1 > %(backupPath)/letsencrypt-cron; sed -i '/letsencrypt-ssl/d' /var/spool/cron/root; cat %(backupPath)/letsencrypt-cron >> /var/spool/cron/root", {
+            [ me.cmd, "grep -m1 letsencrypt-ssl /var/spool/cron/root > %(backupPath)/letsencrypt-cron; sed -i '/letsencrypt-ssl/d' /var/spool/cron/root; cat %(backupPath)/letsencrypt-cron >> /var/spool/cron/root", {
                 backupPath: backupPath
             }],
 
