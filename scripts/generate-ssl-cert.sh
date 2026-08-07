@@ -26,7 +26,6 @@ LE_PORT=12348
 LE_NFT_TABLE=letsencrypt
 
 # Run before BitNinja and other hooks at dstnat - 1 (AlmaLinux nftables).
-# Table must not be named "le" — nft parses it as the <= operator.
 le_nft_ensure_chain() {
     local _family=$1
     /usr/sbin/nft add table ${_family} ${LE_NFT_TABLE} 2>/dev/null || true
