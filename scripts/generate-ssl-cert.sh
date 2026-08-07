@@ -23,22 +23,26 @@ cd "${DIR}/opt/letsencrypt"
 
 PROXY_PORT=12347
 LE_PORT=12348
+LE_NFT_TABLE=letsencrypt
 
 # Run before BitNinja and other hooks at dstnat - 1 (AlmaLinux nftables).
+# Table must not be named "le" — nft parses it as the <= operator.
 le_nft_ensure_chain() {
     local _family=$1
-    /usr/sbin/nft add table ${_family} le 2>/dev/null || true
-    /usr/sbin/nft add chain ${_family} le PREROUTING '{ type nat hook prerouting priority dstnat - 2; policy accept; }' 2>/dev/null || true
+    /usr/sbin/nft add table ${_family} ${LE_NFT_TABLE} 2>/dev/null || true
+    /usr/sbin/nft add chain ${_family} ${LE_NFT_TABLE} PREROUTING '{ type nat hook prerouting priority dstnat - 2; policy accept; }' 2>/dev/null || true
 }
 
 le_nft_remove_rules() {
     for _family in ip ip6; do
-        for _table in 'filter INPUT' 'le PREROUTING' 'nat PREROUTING'; do
+        for _table in 'filter INPUT' "${LE_NFT_TABLE} PREROUTING" 'nat PREROUTING'; do
             for handle in $(/usr/sbin/nft -a list chain ${_family} ${_table} 2>/dev/null | grep 'comment "LE"' | sed -r 's/.*#\s+handle\s+([0-9]+)/\1/g'); do
                 /usr/sbin/nft delete rule ${_family} ${_table} handle $handle 2>/dev/null
             done
         done
-        /usr/sbin/nft delete table ${_family} le 2>/dev/null || true
+        for _legacy_table in ${LE_NFT_TABLE} le; do
+            /usr/sbin/nft delete table ${_family} ${_legacy_table} 2>/dev/null || true
+        done
     done
 }
 
@@ -77,8 +81,8 @@ mkdir -p $DIR/var/log/letsencrypt
     /usr/sbin/nft insert rule ip6 filter INPUT tcp dport ${PROXY_PORT} counter accept comment "LE"
     le_nft_ensure_chain ip
     le_nft_ensure_chain ip6
-    /usr/sbin/nft insert rule ip le PREROUTING ip saddr != 127.0.0.1 tcp dport 80 counter redirect to :${PROXY_PORT} comment "LE"
-    /usr/sbin/nft insert rule ip6 le PREROUTING ip6 saddr != ::1 tcp dport 80 counter redirect to :${LE_PORT} comment "LE" || \
+    /usr/sbin/nft insert rule ip ${LE_NFT_TABLE} PREROUTING ip saddr != 127.0.0.1 tcp dport 80 counter redirect to :${PROXY_PORT} comment "LE"
+    /usr/sbin/nft insert rule ip6 ${LE_NFT_TABLE} PREROUTING ip6 saddr != ::1 tcp dport 80 counter redirect to :${LE_PORT} comment "LE" || \
         /usr/sbin/nft insert rule ip6 filter INPUT tcp dport 80 counter drop comment "LE"
  else
     iptables -I INPUT -p tcp -m tcp --dport ${PROXY_PORT} -j ACCEPT
