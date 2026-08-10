@@ -69,6 +69,9 @@ killall -9 tinyproxy > /dev/null 2>&1
 
 mkdir -p $DIR/var/log/letsencrypt
 
+[[ "$webroot" == "false" ]] && grep -qa 'AlmaLinux' /etc/system-release && \
+    trap le_nft_remove_rules EXIT INT TERM
+
 [[ "$webroot" == "false" ]] && {
     service tinyproxy start || { echo "Failed to start proxy server" ; exit 3 ; }
 
@@ -82,7 +85,7 @@ mkdir -p $DIR/var/log/letsencrypt
     le_nft_ensure_chain ip6
     /usr/sbin/nft insert rule ip ${LE_NFT_TABLE} PREROUTING ip saddr != 127.0.0.1 tcp dport 80 counter redirect to :${PROXY_PORT} comment "LE"
     /usr/sbin/nft insert rule ip6 ${LE_NFT_TABLE} PREROUTING ip6 saddr != ::1 tcp dport 80 counter redirect to :${LE_PORT} comment "LE" || \
-        /usr/sbin/nft insert rule ip6 filter INPUT tcp dport 80 counter drop comment "LE"
+    /usr/sbin/nft insert rule ip6 filter INPUT tcp dport 80 counter drop comment "LE"
  else
     iptables -I INPUT -p tcp -m tcp --dport ${PROXY_PORT} -j ACCEPT
     iptables -I INPUT -p tcp -m tcp --dport ${LE_PORT} -j ACCEPT
